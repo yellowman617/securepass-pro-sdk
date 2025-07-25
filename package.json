@@ -1,0 +1,58 @@
+{
+  "name": "securepass-pro-sdk",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Official JavaScript SDK for SecurePass Pro - The most secure password generator with cryptographically secure 256-bit encryption",
+  "main": "dist/securepass-sdk.js",
+  "module": "dist/securepass-sdk.esm.js",
+  "types": "dist/securepass-sdk.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "test": "jest",
+    "lint": "eslint src/**/*.js",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "password-generator",
+    "secure-passwords",
+    "cryptography",
+    "security",
+    "api-sdk",
+    "javascript",
+    "typescript",
+    "nodejs",
+    "browser"
+  ],
+  "author": "SecurePass Pro Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/securepasspro/securepass-sdk-js"
+  },
+  "bugs": {
+    "url": "https://github.com/securepasspro/securepass-sdk-js/issues"
+  },
+  "homepage": "https://securepasspro.co/sdk",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "jest": "^29.0.0",
+    "rollup": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}
