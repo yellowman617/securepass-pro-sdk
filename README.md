@@ -132,7 +132,7 @@ console.log(test.success); // true/false
 | Plan | Monthly Limit | Bulk Generation | Team Management |
 |------|---------------|-----------------|-----------------|
 | Basic | 10 passwords | ❌ | ❌ |
-| Pro | 20 passwords | ✅ (20/month) | ✅ |
+| Pro | 60 passwords | ✅ (60/month) | ✅ |
 | Enterprise | Unlimited | ✅ (Unlimited) | ✅ |
 | Annual | Unlimited | ✅ (Unlimited) | ✅ |
 
