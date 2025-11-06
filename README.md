@@ -19,9 +19,37 @@ Official JavaScript SDK for SecurePass Pro - The most secure password generator 
 
 ## 📦 Installation
 
+### NPM (Recommended)
+
 ```bash
 npm install securepass-pro-sdk
 ```
+
+### CDN (Browser)
+
+```html
+<!-- ES Module -->
+<script type="module">
+  import SecurePassSDK from 'https://cdn.jsdelivr.net/npm/securepass-pro-sdk@latest/dist/securepass-sdk.esm.js';
+</script>
+
+<!-- UMD (for older browsers) -->
+<script src="https://cdn.jsdelivr.net/npm/securepass-pro-sdk@latest/dist/securepass-sdk.min.js"></script>
+```
+
+### Direct Download
+
+Download from [GitHub Releases](https://github.com/securepasspro/securepass-pro-sdk/releases) and include in your project.
+
+### 🔑 Get Your API Key
+
+1. Log in to [SecurePass Pro Dashboard](https://securepasspro.com)
+2. Go to **API Integration** tab
+3. Click **"Create API Key"**
+4. Copy your API key (only shown once!)
+5. Store it securely (environment variable, secret manager, etc.)
+
+**📖 Full setup instructions:** See [GETTING_STARTED.md](./GETTING_STARTED.md)
 
 ## 🎯 Quick Start
 
@@ -29,12 +57,20 @@ npm install securepass-pro-sdk
 import SecurePassSDK from 'securepass-pro-sdk';
 
 // Initialize with your API key
-const sdk = new SecurePassSDK('your-api-key-here');
+const sdk = new SecurePassSDK('spro_your-api-key-here');
+
+// Test connection first
+const test = await sdk.testConnection();
+console.log(test.success); // true
 
 // Generate a secure password
-const password = await sdk.generatePassword({ length: 16 });
-console.log(password.password); // Your generated password
+const result = await sdk.generatePassword({ length: 16 });
+console.log(result.password); // Your generated password
+console.log(result.strength); // 'strong'
+console.log(result.quota?.remaining); // Remaining quota
 ```
+
+**📖 Complete getting started guide:** [GETTING_STARTED.md](./GETTING_STARTED.md)
 
 ## 📋 API Reference
 
@@ -45,30 +81,92 @@ const sdk = new SecurePassSDK(apiKey, options);
 ```
 
 **Parameters:**
-- `apiKey` (string): Your SecurePass Pro API key
+- `apiKey` (string, required): Your SecurePass Pro API key (must start with `spro_` and be at least 40 characters)
 - `options` (object, optional):
-  - `baseURL` (string): Custom API URL (default: `https://securepasspro.com/api`)
+  - `baseURL` (string): Custom API URL (default: auto-detected from browser or `https://securepasspro.com/api`)
   - `timeout` (number): Request timeout in ms (default: `10000`)
+
+**⚠️ Important:**
+- API key must start with `spro_` prefix
+- Requires Enterprise or Annual plan
+- Store API keys securely - never expose in client-side code
 
 ### Methods
 
 #### `generatePassword(options)`
 Generate a single secure password.
 
+**Options:**
+- `length` (number): Password length, 8-64 characters (default: 16)
+- `includeUppercase` (boolean): Include uppercase letters (default: true)
+- `includeLowercase` (boolean): Include lowercase letters (default: true)
+- `includeNumbers` (boolean): Include numbers (default: true)
+- `includeSymbols` (boolean): Include symbols (default: true)
+
+**Returns:**
 ```javascript
-const password = await sdk.generatePassword({
-  length: 16, // 8-64 characters
+{
+  success: true,
+  password: string,
+  length: number,
+  strength: 'weak' | 'medium' | 'strong' | 'ultra-complex' | 'ultimate-complexity' | 'maximum-complexity',
+  entropy: number,
+  complexity: string,
+  quantumResistant: boolean,
+  timestamp: string,
+  quota: {
+    remaining: number,
+    apiKeyId: string
+  }
+}
+```
+
+**Example:**
+```javascript
+const result = await sdk.generatePassword({
+  length: 20,
+  includeUppercase: true,
+  includeLowercase: true,
+  includeNumbers: true,
+  includeSymbols: true
 });
+
+console.log(result.password); // Generated password
+console.log(result.strength); // 'strong'
+console.log(result.quota?.remaining); // Remaining quota
 ```
 
 #### `generateBulkPasswords(count, options)`
 Generate multiple passwords (up to 1000).
 
+**Parameters:**
+- `count` (number): Number of passwords to generate (1-1000)
+- `options` (object): Same as `generatePassword()` options
+
+**Returns:**
 ```javascript
-const bulkPasswords = await sdk.generateBulkPasswords(10, {
+{
+  success: true,
+  count: number,
+  passwords: string[],
+  length: number,
+  timestamp: string,
+  quota: {
+    remaining: number,
+    apiKeyId: string
+  }
+}
+```
+
+**Example:**
+```javascript
+const result = await sdk.generateBulkPasswords(10, {
   length: 16
 });
-console.log(bulkPasswords.passwords); // Array of passwords
+
+console.log(result.passwords); // Array of 10 passwords
+console.log(result.count); // 10
+console.log(result.quota?.remaining); // Remaining quota
 ```
 
 #### `getTeamInfo(teamId)`
@@ -103,18 +201,70 @@ const result = await sdk.updateTeamMemberRole('team_12345', 'user@company.com', 
 #### `getUsage()`
 Get your current usage statistics.
 
+**Returns:**
+```javascript
+{
+  name: string,
+  email: string,
+  plan: 'Basic' | 'Pro' | 'Enterprise' | 'Annual',
+  nextBillingDate: string,
+  passwordLimit: number,
+  randomizationCount: number,
+  usedGenerations: number,
+  signupDate: string,
+  billingCycle: 'monthly' | 'annual',
+  amount: number,
+  apiKey: {
+    quotaRemaining: number,
+    apiKeyId: string
+  }
+}
+```
+
+**Example:**
 ```javascript
 const usage = await sdk.getUsage();
-console.log(usage.plan); // Your current plan
+console.log(usage.plan); // 'Enterprise'
 console.log(usage.usedGenerations); // Passwords used this month
+console.log(usage.passwordLimit); // Total limit
+console.log(usage.apiKey?.quotaRemaining); // Remaining API quota
 ```
 
 #### `testConnection()`
 Test API connection and authentication.
 
+**Returns:**
+```javascript
+{
+  success: boolean,
+  message: string,
+  data?: {
+    success: boolean,
+    message: string,
+    timestamp: string,
+    user: {
+      email: string,
+      plan: string
+    },
+    apiKey: {
+      id: string,
+      permissions: string[]
+    },
+    version: string
+  }
+}
+```
+
+**Example:**
 ```javascript
 const test = await sdk.testConnection();
-console.log(test.success); // true/false
+if (test.success) {
+  console.log('✅ Connection successful!');
+  console.log('User:', test.data.user.email);
+  console.log('Plan:', test.data.user.plan);
+} else {
+  console.error('❌ Connection failed:', test.message);
+}
 ```
 
 ## 🔒 Security Features
@@ -136,7 +286,31 @@ console.log(test.success); // true/false
 | Enterprise | Unlimited | ✅ (Unlimited) | ✅ |
 | Annual | Unlimited | ✅ (Unlimited) | ✅ |
 
-## 🛠️ Examples
+## 🛠️ Complete Examples
+
+### Error Handling
+
+Always handle errors properly:
+
+```javascript
+async function generatePasswordSafely() {
+  try {
+    const result = await sdk.generatePassword({ length: 16 });
+    return result.password;
+  } catch (error) {
+    if (error.message.includes('401')) {
+      console.error('❌ Authentication failed. Check your API key.');
+    } else if (error.message.includes('429')) {
+      console.error('❌ Rate limit exceeded. Please try again later.');
+    } else if (error.message.includes('403')) {
+      console.error('❌ Access denied. Check your plan and permissions.');
+    } else {
+      console.error('❌ Error:', error.message);
+    }
+    throw error;
+  }
+}
+```
 
 ### React Component
 ```javascript
@@ -209,10 +383,22 @@ await sdk.updateTeamMemberRole('team_12345', 'user@company.com', 'admin');
 
 ## 🚨 Important Notes
 
-1. **API Key Security** - Never expose your API key in client-side code
-2. **Rate Limits** - Respect the rate limits for your plan
-3. **Error Handling** - Always handle errors gracefully
-4. **Testing** - Use `testConnection()` to verify your setup
+1. **API Key Security** - Never expose your API key in client-side code or public repositories
+2. **API Key Format** - Must start with `spro_` and be at least 40 characters
+3. **Plan Requirements** - SDK access requires Enterprise or Annual plan
+4. **Rate Limits** - Respect the rate limits for your plan
+5. **Error Handling** - Always handle errors gracefully
+6. **Testing** - Use `testConnection()` to verify your setup before generating passwords
+7. **Environment Variables** - Store API keys in environment variables:
+   ```javascript
+   const sdk = new SecurePassSDK(process.env.SECUREPASS_API_KEY);
+   ```
+
+## 📖 Documentation
+
+- **[Getting Started Guide](./GETTING_STARTED.md)** - Complete step-by-step setup
+- **[API Reference](#api-reference)** - Full API documentation
+- **[Examples](#examples)** - Code examples for common use cases
 
 ## 🆘 Support
 
