@@ -6,10 +6,13 @@
 class SecurePassSDK {
   constructor(apiKey, options = {}) {
     this.apiKey = apiKey;
-    this.baseURL = options.baseURL || 'https://securepasspro.com/api';
+    // Use actual deployed URL or allow custom baseURL
+    this.baseURL = options.baseURL || (typeof window !== 'undefined' 
+      ? `${window.location.origin}/api` 
+      : 'https://securepasspro.com/api');
     this.timeout = options.timeout || 10000;
     
-    // Security: Validate API key format
+    // Security: Validate API key format (should start with spro_ for enterprise)
     if (!this.apiKey || typeof this.apiKey !== 'string' || this.apiKey.length < 10) {
       throw new Error('Invalid API key provided');
     }
@@ -23,8 +26,15 @@ class SecurePassSDK {
   async generatePassword(options = {}) {
     try {
       const length = Math.min(Math.max(options.length || 16, 8), 64); // Secure limits
-      const response = await this._makeRequest(`/generate?length=${length}`, {
-        method: 'GET'
+      const response = await this._makeRequest('/password', {
+        method: 'POST',
+        body: JSON.stringify({
+          length: length,
+          includeUppercase: options.includeUppercase !== false,
+          includeLowercase: options.includeLowercase !== false,
+          includeNumbers: options.includeNumbers !== false,
+          includeSymbols: options.includeSymbols !== false
+        })
       });
 
       return response;
@@ -46,7 +56,7 @@ class SecurePassSDK {
     
     try {
       const response = await this._makeRequest(`/generate-bulk?count=${maxCount}&length=${length}`, {
-        method: 'GET'
+        method: 'POST'
       });
 
       return response;
@@ -141,18 +151,6 @@ class SecurePassSDK {
     }
   }
 
-  /**
-   * Get user usage statistics
-   * @returns {Promise<Object>} Usage data
-   */
-  async getUsage() {
-    try {
-      const response = await this._makeRequest('/user');
-      return response;
-    } catch (error) {
-      throw new Error(`Failed to get usage data: ${error.message}`);
-    }
-  }
 
   /**
    * Test API connection
@@ -164,6 +162,21 @@ class SecurePassSDK {
       return { success: true, message: 'API connection successful', data: response };
     } catch (error) {
       return { success: false, message: error.message };
+    }
+  }
+
+  /**
+   * Get user usage statistics
+   * @returns {Promise<Object>} Usage data
+   */
+  async getUsage() {
+    try {
+      const response = await this._makeRequest('/user', {
+        method: 'GET'
+      });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get usage data: ${error.message}`);
     }
   }
 
